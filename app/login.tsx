@@ -2,25 +2,37 @@ import { useAuth } from "@/context/AuthConthext";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
-  const { login } = useAuth();
+  const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { signIn, signUp } = useAuth();
   const router = useRouter();
 
-  const handleLogin = () => {
-    if (email.includes("@")) {
-      login(email);
-      router.back();
-    } else {
-      alert("Please enter a valid email");
+  const handleLogin = async () => {
+    if (!email.includes("@") || password.length < 6) {
+      alert("Please enter a valid email and password (min 6 characters)");
+      return;
     }
+
+    setIsSubmitting(true);
+    await signIn(email, password);
+    setIsSubmitting(false);
+  };
+
+  const handleRegister = async () => {
+    setIsSubmitting(true);
+    await signUp(email, password);
+    setIsSubmitting(false);
   };
 
   return (
@@ -34,14 +46,48 @@ export default function LoginScreen() {
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
+        keyboardType="email-address"
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Sign In</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+      />
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handleLogin}
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Sign In</Text>
+        )}
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        onPress={handleRegister}
+        style={[
+          styles.button,
+          {
+            backgroundColor: "#fff",
+            borderWidth: 1,
+            borderColor: "#4A0E0E",
+            marginTop: 10,
+          },
+        ]}
+      >
+        <Text style={[styles.buttonText, { color: "#4A0E0E" }]}>
+          Create Account
+        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => router.back()}>
-        <Text style={styles.cancel}>Browse as Guest</Text>
+        <Text style={styles.cancel}>Browsw as Guest</Text>
       </TouchableOpacity>
     </View>
   );

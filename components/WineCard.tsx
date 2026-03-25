@@ -65,7 +65,6 @@ export const WineCard = ({
           uri: image,
         }}
         style={styles.image}
-        resizeMode="contain"
       />
 
       <View style={styles.infoContainer}>
@@ -93,8 +92,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     padding: 12,
 
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
+    boxShadow: "0px 4px 10px rgba(0,0,0,0.1)",
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,

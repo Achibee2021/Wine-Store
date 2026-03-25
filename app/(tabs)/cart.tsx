@@ -1,16 +1,19 @@
+import { WebHeader } from "@/components/webHeader";
 import { useAuth } from "@/context/AuthConthext";
 import { useCart } from "@/context/CartContext";
+import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Modal,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Modal,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function CartScreen() {
@@ -28,18 +31,38 @@ export default function CartScreen() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPaymentMethod, setIsPaymentMethod] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, loading, user } = useAuth();
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
+    if (!user) {
+      alert("Please sign in to complete your purchase");
+      return;
+    }
+
     setIsProcessing(true);
 
-    setTimeout(() => {
+    try {
+      const { error } = await supabase.from("orders").insert([
+        {
+          user_id: user?.id,
+          total_amount: totalPrice,
+          items: cart,
+          status: "completed",
+        },
+      ]);
+
+      if (error) {
+        throw error;
+      }
       setIsProcessing(false);
       setIsPaymentMethod(false);
       setIsSuccess(true);
       clearCart();
       setIsCheckoutStep(false);
-    }, 2000);
+    } catch (error: any) {
+      alert("Payment failed:" + error.message);
+      setIsProcessing(false);
+    }
   };
 
   const renderEmptyCart = () => (
@@ -88,16 +111,23 @@ export default function CartScreen() {
     </View>
   );
 
+  if (loading) return <ActivityIndicator />;
   return (
     <View style={styles.container}>
-      <View style={styles.headerRow}>
+      <WebHeader />
+      <View
+        style={[
+          styles.headerRow,
+          { paddingTop: Platform.OS === "web" ? 20 : 60 },
+        ]}
+      >
         <TouchableOpacity
           onPress={() =>
             isCheckoutStep ? setIsCheckoutStep(false) : router.back()
           }
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color="#4A0E0E" />
+          {<Ionicons name="arrow-back" size={24} color="#4A0E0E" />}
         </TouchableOpacity>
         <Text style={styles.header}>
           {isCheckoutStep ? "Payment" : "Your Wine Cellar"}
@@ -221,16 +251,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#fff",
-    padding: 20,
+    width: "100%",
+    maxWidth: 1200,
+    alignSelf: "center",
   },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingHorizontal: 15,
     paddingBottom: 20,
     backgroundColor: "#fff",
+    width: "100%",
   },
 
   header: {
@@ -245,6 +277,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 15,
+    paddingHorizontal: 15,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
   },

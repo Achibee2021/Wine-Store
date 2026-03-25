@@ -1,21 +1,54 @@
+import { WebHeader } from "@/components/webHeader";
 import { useAuth } from "@/context/AuthConthext";
+import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 // 1. Import the modern hook
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
-  const { isLoggedIn, user, logout } = useAuth();
+  const { isLoggedIn, user, logout, loading } = useAuth();
   const router = useRouter();
+  const [orderCount, setOrderCount] = useState(0);
+
+  useEffect(() => {
+    if (user) {
+      fetchOrderStats();
+    }
+  }, [user]);
+
+  const fetchOrderStats = async () => {
+    const { count, error } = await supabase
+      .from("orders")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user?.id);
+
+    if (!error && count !== null) setOrderCount(count);
+  };
 
   // 2. Get the safe area values
   const insets = useSafeAreaInsets();
 
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#4A0E0E" />
+      </View>
+    );
+  }
+
   return (
     // 3. Apply the top inset as padding to the main container
     <View style={[styles.container, { paddingTop: insets.top + 20 }]}>
+      <WebHeader />
       <View style={styles.content}>
         <Text style={styles.header}>My Cellar Account</Text>
 
@@ -26,15 +59,21 @@ export default function ProfileScreen() {
             </View>
 
             <Text style={styles.userName}>
-              {user?.name || "Wine Connoisseur"}
+              {user?.email?.split("@")[0].toUpperCase() || "Wine Connoisseur"}
             </Text>
             <Text style={styles.userEmail}>{user?.email}</Text>
 
             <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNumber}>12</Text>
-                <Text style={styles.statLabel}>Orders</Text>
-              </View>
+              <TouchableOpacity
+                style={styles.statItem}
+                onPress={() => router.push("/orders")}
+              >
+                <Text style={styles.statNumber}>{orderCount}</Text>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Text style={styles.statLabel}>Orders</Text>
+                  <Ionicons name="chevron-forward" size={12} color="#999" />
+                </View>
+              </TouchableOpacity>
               <View style={[styles.statItem, styles.statBorder]}>
                 <Text style={styles.statNumber}>4</Text>
                 <Text style={styles.statLabel}>Favorites</Text>

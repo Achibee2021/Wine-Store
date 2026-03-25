@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 interface CartItem {
   id: string;
@@ -20,6 +21,34 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
+
+  // ----- LOAD DATA ON STARTUP ----------
+  useEffect(() => {
+    const loadCart = async () => {
+      try {
+        const savedCart = await AsyncStorage.getItem("WEIN_STORE_CART");
+        if (savedCart) {
+          setCart(JSON.parse(savedCart));
+        }
+      } catch (e) {
+        console.error("Failed to load cart", e);
+      }
+    };
+    loadCart();
+  }, []);
+
+  // -------- SAVE DATA WHENEVER CART CHANGES ----------
+
+  useEffect(() => {
+    const saveCart = async () => {
+      try {
+        await AsyncStorage.setItem("WEIN_STORE_CART", JSON.stringify(cart));
+      } catch (e) {
+        console.error("Failed to save cart", e);
+      }
+    };
+    saveCart();
+  }, [cart]);
 
   const removeFromCart = (id: string) => {
     setCart((prevCart) => {

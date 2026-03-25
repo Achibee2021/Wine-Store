@@ -1,11 +1,16 @@
+import { Hero } from "@/components/hero";
+import { WebHeader } from "@/components/webHeader";
 import { WineCard } from "@/components/WineCard";
-import { WINE_DATA } from "@/constants/Wines";
 import { useCart } from "@/context/CartContext";
+import { supabase } from "@/lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
+  Dimensions,
   FlatList,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -26,14 +31,43 @@ function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { cart } = useCart();
+  const { width } = Dimensions.get("window");
+  const flatListRef = React.useRef<FlatList>(null);
+
+  const numColumns = width > 1100 ? 3 : width > 700 ? 2 : 1;
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const [activeClass, setActiveClass] = useState("All");
   const [activeSub, setActiveSub] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [wines, setWines] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filtereWines = WINE_DATA.filter((item) => {
+  // fetch wines
+  useEffect(() => {
+    fetchWines();
+  }, []);
+
+  const fetchWines = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase.from("wines").select("*");
+
+      if (error) {
+        throw error;
+      }
+      if (data) {
+        setWines(data);
+      }
+    } catch (error: any) {
+      alert("Error loading cellar:" + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filtereWines = wines.filter((item) => {
     const matchesClass = activeClass === "All" || item.class === activeClass;
     const matchesSub = activeSub === "All" || item.type === activeSub;
 
@@ -51,15 +85,23 @@ function HomeScreen() {
 
   // function to shows how ONE wine card should be
   const renderWineItem = ({ item }: { item: any }) => (
-    <WineCard
-      id={item.id}
-      name={item.name}
-      winery={item.winery}
-      price={item.price}
-      region={item.region}
-      type={item.type}
-      image={item.image}
-    />
+    <View
+      style={{
+        flex: 1 / numColumns,
+        padding: 10,
+        minWidth: Platform.OS === "web" ? 280 : "auto",
+      }}
+    >
+      <WineCard
+        id={item.id}
+        name={item.name}
+        winery={item.winery}
+        price={item.price}
+        region={item.region}
+        type={item.type}
+        image={item.image}
+      />
+    </View>
   );
 
   const renderEmptyList = () => (
@@ -76,91 +118,124 @@ function HomeScreen() {
     </View>
   );
 
+  const scrollToCellar = () => {
+    flatListRef.current?.scrollToOffset({
+      offset: Platform.OS === "web" ? 460 : 0,
+      animated: true,
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#4A0E0E" />
+        <Text style={{ marginTop: 10, color: "#666" }}>
+          Opening the Cellar...
+        </Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.headerRow}>
-        <Text style={styles.header}>Wine Store</Text>
+    <View style={styles.container}>
+      {Platform.OS === "web" ? (
+        <WebHeader />
+      ) : (
+        <View style={[styles.headerRow, { paddingTop: insets.top + 10 }]}>
+          <Text style={styles.header}>Wine Store</Text>
 
-        <TouchableOpacity
-          style={styles.cartIconContainer}
-          onPress={() => router.push("/cart")}
-        >
-          <Ionicons name="cart-outline" size={28} color="#4A0E0E" />
-          {totalItems > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{totalItems}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      {/** The Search Bar */}
-      <View style={styles.searchContainer}>
-        <TextInput
-          placeholder="Search for a wine or winery...."
-          placeholderTextColor="#999"
-          style={styles.searchInput}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          clearButtonMode="while-editing"
-        />
-      </View>
-
-      {/** TOP LEVEL: Wine vs Champagne */}
-      <View style={styles.mainTabRow}>
-        {MAIN_CLASSES.map((cls) => (
           <TouchableOpacity
-            key={cls}
-            onPress={() => handleClassChange(cls)}
-            style={[
-              styles.mainTab,
-              activeClass === cls && styles.mainTabActive,
-            ]}
+            style={styles.cartIconContainer}
+            onPress={() => router.push("/cart")}
           >
-            <Text
-              style={[
-                styles.mainTabText,
-                activeClass === cls && styles.mainTabTextActive,
-              ]}
-            >
-              {cls}
-            </Text>
+            <Ionicons name="cart-outline" size={28} color="#4A0E0E" />
+            {totalItems > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{totalItems}</Text>
+              </View>
+            )}
           </TouchableOpacity>
-        ))}
-      </View>
-
-      {/** SUB LEVEL */}
-      {activeClass !== "All" && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.subScroll}
-        >
-          {(SUB_TYPES as any)[activeClass].map((sub: string) => (
-            <TouchableOpacity
-              key={sub}
-              onPress={() => setActiveSub(sub)}
-              style={[styles.subTab, activeSub === sub && styles.subTabActive]}
-            >
-              <Text
-                style={[
-                  styles.subTabText,
-                  activeSub === sub && styles.subTabTextActive,
-                ]}
-              >
-                {sub}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        </View>
       )}
 
       {/**FlatList */}
       <FlatList
+        ref={flatListRef}
+        ListHeaderComponent={
+          <View style={styles.listHeaderInner}>
+            <Hero onPress={scrollToCellar} />
+            <View style={styles.controlsContainer}>
+              {/** The Search Bar */}
+              <View style={styles.searchContainer}>
+                <TextInput
+                  placeholder="Search for a wine or winery...."
+                  placeholderTextColor="#999"
+                  style={styles.searchInput}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+              </View>
+              {/** TOP LEVEL: Wine vs Champagne */}
+              <View style={styles.mainTabRow}>
+                {MAIN_CLASSES.map((cls) => (
+                  <TouchableOpacity
+                    key={cls}
+                    onPress={() => handleClassChange(cls)}
+                    style={[
+                      styles.mainTab,
+                      activeClass === cls && styles.mainTabActive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.mainTabText,
+                        activeClass === cls && styles.mainTabTextActive,
+                      ]}
+                    >
+                      {cls}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              {/** SUB LEVEL */}
+              {activeClass !== "All" && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.subScroll}
+                >
+                  {(SUB_TYPES as any)[activeClass].map((sub: string) => (
+                    <TouchableOpacity
+                      key={sub}
+                      onPress={() => setActiveSub(sub)}
+                      style={[
+                        styles.subTab,
+                        activeSub === sub && styles.subTabActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.subTabText,
+                          activeSub === sub && styles.subTabTextActive,
+                        ]}
+                      >
+                        {sub}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+
+              <Text style={styles.sectionTitle}>Our Vintage</Text>
+            </View>
+          </View>
+        }
         data={filtereWines}
+        key={numColumns}
+        numColumns={numColumns}
         renderItem={renderWineItem}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
         ListEmptyComponent={renderEmptyList}
       />
     </View>
@@ -168,18 +243,55 @@ function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FDFCFB" },
-  header: {
-    fontSize: 32,
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+    alignSelf: "center",
+    width: "100%",
+    maxWidth: 1200,
+  },
+  listHeaderInner: {
+    backgroundColor: "#fff",
+  },
+  controlsContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  sectionTitle: {
+    fontSize: 24,
     fontWeight: "bold",
-    marginHorizontal: 20,
-    marginTop: 10,
+    color: "#4A0E0E",
+    marginVertical: 20,
+  },
+  header: {
+    fontSize: 28,
+    fontWeight: "bold",
     color: "#2C0B0B",
   },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    marginTop: 10,
+  },
+  searchContainer: {
+    paddingHorizontal: 20,
+    marginVertical: 15,
+  },
+
+  searchInput: {
+    backgroundColor: "#F5F5F5",
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    borderRadius: 12,
+    fontSize: 16,
+  },
+
   mainTabRow: {
     flexDirection: "row",
     marginHorizontal: 20,
-    marginTop: 15,
+    marginBottom: 15,
     borderBottomWidth: 1,
     borderBottomColor: "#eee",
   },
@@ -192,7 +304,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#4A0E0E",
   },
   mainTabText: {
-    fontSize: 18,
+    fontSize: 16,
     color: "#999",
     fontWeight: "600",
   },
@@ -209,21 +321,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#f0f0f0",
     marginRight: 8,
   },
-  subTabActive: { backgroundColor: "4A0E0E" },
+  subTabActive: { backgroundColor: "#4A0E0E" },
   subTabText: { fontSize: 13, color: "#666" },
   subTabTextActive: { color: "#fff" },
-  searchContainer: {
-    paddingHorizontal: 20,
-    marginTop: 10,
-  },
-  searchInput: {
-    backgroundColor: "#F0F0F0",
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderRadius: 10,
-    fontSize: 16,
-    color: "#333",
-  },
+  sectionHeader: { paddingHorizontal: 20, marginVertical: 20 },
+
   emptyContainer: {
     flex: 1,
     alignItems: "center",
@@ -242,13 +344,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textDecorationLine: "underline",
   },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingRight: 20,
-    marginTop: 10,
-  },
+
   cartIconContainer: {
     position: "relative",
     padding: 5,
