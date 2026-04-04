@@ -4,7 +4,7 @@ import React from "react";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { Ionicons } from "@expo/vector-icons";
+import { ShoppingCart } from "lucide-react-native";
 import { Platform } from "react-native";
 
 export default function TabLayout() {
@@ -43,9 +43,7 @@ export default function TabLayout() {
         name="cart"
         options={{
           title: "Cart",
-          tabBarIcon: ({ color }) => (
-            <Ionicons name="cart" size={24} color={color} />
-          ),
+          tabBarIcon: ({ color }) => <ShoppingCart size={24} color={color} />,
         }}
       />
     </Tabs>

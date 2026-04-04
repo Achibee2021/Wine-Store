@@ -3,8 +3,8 @@ import { WebHeader } from "@/components/webHeader";
 import { WineCard } from "@/components/WineCard";
 import { useCart } from "@/context/CartContext";
 import { supabase } from "@/lib/supabase";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { Filter, ShoppingCart, XCircle } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -43,6 +43,7 @@ function HomeScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [wines, setWines] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [sortBy, setSortBy] = useState("default");
 
   // fetch wines
   useEffect(() => {
@@ -67,16 +68,32 @@ function HomeScreen() {
     }
   };
 
-  const filtereWines = wines.filter((item) => {
-    const matchesClass = activeClass === "All" || item.class === activeClass;
-    const matchesSub = activeSub === "All" || item.type === activeSub;
+  const filtereWines = wines
+    .filter((item) => {
+      const matchesClass =
+        activeClass === "All" ||
+        (item.class && item.class.toLowerCase() === activeClass.toLowerCase());
+      const matchesSub =
+        activeSub === "All" ||
+        (item.type && item.type.toLowerCase() === activeSub.toLowerCase());
 
-    const matchesSearch = item.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
+      const matchesSearch = item.name
+        ? item.name.toLowerCase().includes(searchQuery.toLowerCase())
+        : false;
 
-    return matchesClass && matchesSub && matchesSearch;
-  });
+      return matchesClass && matchesSub && matchesSearch;
+    })
+    .sort((a, b) => {
+      const priceA = a.discount_price ?? a.price;
+      const priceB = b.discount_price ?? b.price;
+
+      if (sortBy === "price-low") {
+        return priceA - priceB;
+      } else if (sortBy === "price-high") {
+        return priceB - priceA;
+      }
+      return 0;
+    });
 
   const handleClassChange = (newClass: string) => {
     setActiveClass(newClass);
@@ -100,6 +117,7 @@ function HomeScreen() {
         region={item.region}
         type={item.type}
         image={item.image}
+        discount_price={item.discount_price}
       />
     </View>
   );
@@ -148,7 +166,7 @@ function HomeScreen() {
             style={styles.cartIconContainer}
             onPress={() => router.push("/cart")}
           >
-            <Ionicons name="cart-outline" size={28} color="#4A0E0E" />
+            <ShoppingCart size={24} color="#4A0E0E" />
             {totalItems > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{totalItems}</Text>
@@ -167,13 +185,23 @@ function HomeScreen() {
             <View style={styles.controlsContainer}>
               {/** The Search Bar */}
               <View style={styles.searchContainer}>
-                <TextInput
-                  placeholder="Search for a wine or winery...."
-                  placeholderTextColor="#999"
-                  style={styles.searchInput}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
+                <View style={styles.searchInputContainer}>
+                  <TextInput
+                    placeholder="Search for a wine or winery...."
+                    placeholderTextColor="#999"
+                    style={styles.searchInput}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                  />
+                  {searchQuery.length > 0 && (
+                    <TouchableOpacity
+                      onPress={() => setSearchQuery("")}
+                      style={styles.clearButton}
+                    >
+                      <XCircle size={20} color="#999" />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
               {/** TOP LEVEL: Wine vs Champagne */}
               <View style={styles.mainTabRow}>
@@ -225,6 +253,46 @@ function HomeScreen() {
                   ))}
                 </ScrollView>
               )}
+
+              {/**Sort ui */}
+              <View style={styles.sortContainer}>
+                <Filter size={16} color="#999" style={{ marginRight: 8 }} />
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <TouchableOpacity
+                    onPress={() => setSortBy("default")}
+                    style={[
+                      styles.sortButton,
+                      sortBy === "default" && styles.sortButtonActive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.sortButtonText,
+                        sortBy === "default" && styles.sortButtonTextActive,
+                      ]}
+                    >
+                      Featured
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => setSortBy("price-high")}
+                    style={[
+                      styles.sortButton,
+                      sortBy === "price-high" && styles.sortButtonActive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.sortButtonText,
+                        sortBy === "price-high" && styles.sortButtonTextActive,
+                      ]}
+                    >
+                      € High to Low
+                    </Text>
+                  </TouchableOpacity>
+                </ScrollView>
+              </View>
 
               <Text style={styles.sectionTitle}>Our Vintage</Text>
             </View>
@@ -281,11 +349,23 @@ const styles = StyleSheet.create({
   },
 
   searchInput: {
-    backgroundColor: "#F5F5F5",
+    flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 15,
-    borderRadius: 12,
     fontSize: 16,
+    color: "#2C0B0B",
+  },
+  searchInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F5F5F5",
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    borderWidth: 1,
+    borderColor: "#0E0E0E",
+  },
+  clearButton: {
+    padding: 5,
+    marginLeft: 5,
   },
 
   mainTabRow: {
@@ -367,6 +447,33 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "bold",
   },
+  sortContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    marginBottom: 5,
+    marginTop: 15,
+  },
+  sortButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: "#f5f5f5",
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: "#eee",
+  },
+  sortButtonActive: {
+    backgroundColor: "#4A0E0E",
+    borderColor: "#4A0E0E",
+  },
+  sortButtonText: {
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  sortButtonTextActive: { color: "#fff" },
 });
 
 export default HomeScreen;

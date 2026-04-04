@@ -1,0 +1,13 @@
+/* FORCE loading from the web instead of local files */
+@font-face {
+  font-family: "Ionicons";
+  src: url("https://unpkg.com/ionicons@latest/dist/ionicons/fonts/ionicons.ttf")
+    format("truetype");
+  font-display: swap;
+}
+
+/* Add !important to the font-family for all icon classes if necessary */
+[class*="Ionicons"],
+[style*="fontFamily: Ionicons"] {
+  font-family: "Ionicons" !important;
+}

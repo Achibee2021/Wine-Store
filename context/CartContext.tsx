@@ -6,6 +6,7 @@ interface CartItem {
   name: string;
   price: number;
   quantity: number;
+  originalPrice: number;
 }
 
 interface CartContextType {
@@ -15,6 +16,7 @@ interface CartContextType {
   deleteFromCart: (wine: any) => void;
   clearCart: () => void;
   totalPrice: number;
+  totalSavings: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -73,7 +75,13 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
       return [
         ...prevCart,
-        { id: wine.id, name: wine.name, price: wine.price, quantity: 1 },
+        {
+          id: wine.id,
+          name: wine.name,
+          price: wine.price,
+          quantity: 1,
+          originalPrice: wine.originalPrice || wine.price,
+        },
       ];
     });
   };
@@ -86,6 +94,13 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     (sum, item) => sum + item.price * item.quantity,
     0,
   );
+
+  const totalSavings = cart.reduce((sum, item) => {
+    if (item.originalPrice && item.originalPrice > item.price) {
+      return sum + (item.originalPrice - item.price) * item.quantity;
+    }
+    return sum;
+  }, 0);
 
   const clearCart = () => {
     setCart([]);
@@ -100,6 +115,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         deleteFromCart,
         clearCart,
         totalPrice,
+        totalSavings,
       }}
     >
       {children}

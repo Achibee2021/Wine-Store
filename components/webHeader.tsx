@@ -1,6 +1,6 @@
 import { useCart } from "@/context/CartContext";
-import { Ionicons } from "@expo/vector-icons";
 import { usePathname, useRouter } from "expo-router";
+import { ShoppingCart } from "lucide-react-native";
 import React from "react";
 import {
   Dimensions,
@@ -59,7 +59,7 @@ export const WebHeader = () => {
           onPress={() => router.push("/cart")}
           style={styles.cartBtnWeb}
         >
-          <Ionicons name="cart" size={16} color="#fff" />
+          <ShoppingCart size={16} color="#fff" strokeWidth={1.5} />
           <Text
             style={[styles.cartBtnText, { fontSize: isMobileWeb ? 12 : 14 }]}
           >

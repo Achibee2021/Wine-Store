@@ -1,14 +1,23 @@
+import { ReceiptModal } from "@/components/ReceiptModal";
 import { WebHeader } from "@/components/webHeader";
 import { useAuth } from "@/context/AuthConthext";
 import { useCart } from "@/context/CartContext";
 import { supabase } from "@/lib/supabase";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import {
+  ArrowLeft,
+  CreditCard,
+  Minus,
+  Plus,
+  ShoppingCart,
+  Smartphone,
+  Trash2,
+  Wallet,
+} from "lucide-react-native";
 import React, { useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Modal,
   Platform,
   StyleSheet,
   Text,
@@ -25,6 +34,7 @@ export default function CartScreen() {
     deleteFromCart,
     clearCart,
     totalPrice,
+    totalSavings,
   } = useCart();
   const [isCheckoutStep, setIsCheckoutStep] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("card");
@@ -32,6 +42,7 @@ export default function CartScreen() {
   const [isPaymentMethod, setIsPaymentMethod] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const { isLoggedIn, loading, user } = useAuth();
+  const [lastOrder, setLastOrder] = useState<any>(null);
 
   const handleCheckout = async () => {
     if (!user) {
@@ -42,18 +53,27 @@ export default function CartScreen() {
     setIsProcessing(true);
 
     try {
-      const { error } = await supabase.from("orders").insert([
-        {
-          user_id: user?.id,
-          total_amount: totalPrice,
-          items: cart,
-          status: "completed",
-        },
-      ]);
+      const orderData = {
+        user_id: user?.id,
+        user_email: user?.email,
+        total_amount: totalPrice,
+        total_savings: totalSavings,
+        items: cart,
+        payment_method: paymentMethod,
+        status: "completed",
+      };
+      const { data, error } = await supabase
+        .from("orders")
+        .insert([orderData])
+        .select()
+        .single();
 
       if (error) {
         throw error;
       }
+
+      setLastOrder(data);
+
       setIsProcessing(false);
       setIsPaymentMethod(false);
       setIsSuccess(true);
@@ -67,7 +87,7 @@ export default function CartScreen() {
 
   const renderEmptyCart = () => (
     <View style={styles.emptyContainer}>
-      <Ionicons name="cart-outline" size={80} color="#eee" />
+      <ShoppingCart size={80} color="#eee" strokeWidth={1} />
       <Text style={styles.emptyMsg}>Your Cellar is currently empty.</Text>
       <TouchableOpacity
         style={styles.continueBtn}
@@ -82,11 +102,11 @@ export default function CartScreen() {
       <View style={styles.itemInfo}>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
           <TouchableOpacity onPress={() => deleteFromCart(item.id)}>
-            <Ionicons
-              name="trash-outline"
+            <Trash2
               size={20}
               color="#999"
               style={{ marginRight: 10 }}
+              strokeWidth={1.5}
             />
           </TouchableOpacity>
           <Text style={styles.itemName}>{item.name}</Text>
@@ -99,19 +119,20 @@ export default function CartScreen() {
           onPress={() => removeFromCart(item.id)}
           style={styles.qtyBtn}
         >
-          <Ionicons name="remove" size={20} color="#4A0E0E" />
+          <Minus size={20} color="#4A0E0E" strokeWidth={1.5} />
         </TouchableOpacity>
 
         <Text style={styles.qtyText}>{item.quantity}</Text>
 
         <TouchableOpacity onPress={() => addToCart(item)} style={styles.qtyBtn}>
-          <Ionicons name="add" size={20} color="#4A0E0E" />
+          <Plus size={20} color="#4A0E0E" strokeWidth={1.5} />
         </TouchableOpacity>
       </View>
     </View>
   );
 
   if (loading) return <ActivityIndicator />;
+
   return (
     <View style={styles.container}>
       <WebHeader />
@@ -127,7 +148,7 @@ export default function CartScreen() {
           }
           style={styles.backButton}
         >
-          {<Ionicons name="arrow-back" size={24} color="#4A0E0E" />}
+          {<ArrowLeft size={24} color="#4A0E0E" strokeWidth={1.5} />}
         </TouchableOpacity>
         <Text style={styles.header}>
           {isCheckoutStep ? "Payment" : "Your Wine Cellar"}
@@ -146,8 +167,19 @@ export default function CartScreen() {
 
           {cart.length > 0 && (
             <View style={styles.footer}>
+              {totalSavings > 0 && (
+                <View style={styles.totalRow}>
+                  <Text style={[styles.totalLabel, { color: "#27ae60" }]}>
+                    Your Savings
+                  </Text>
+                  <Text style={[styles.totalPrice, { color: "#27ae60" }]}>
+                    -€{totalSavings.toFixed(2)}
+                  </Text>
+                </View>
+              )}
+
               <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Subtotal</Text>
+                <Text style={styles.totalLabel}>Total to Pay</Text>
                 <Text style={styles.totalPrice}>€{totalPrice.toFixed(2)}</Text>
               </View>
 
@@ -181,19 +213,33 @@ export default function CartScreen() {
                 (setPaymentMethod(method), setIsPaymentMethod(true));
               }}
             >
-              <Ionicons
-                name={
-                  method === "Credit Card"
-                    ? "card"
-                    : method === "OM"
-                      ? "logo-apple"
-                      : method === "MoMo"
-                        ? "logo-amazon"
-                        : "logo-paypal"
-                }
-                size={24}
-                color={paymentMethod === method ? "#fff" : "#4A0E0E"}
-              />
+              <View>
+                {method === "Credit Card" ? (
+                  <CreditCard
+                    size={24}
+                    color={paymentMethod === method ? "#fff" : "#4A0E0E"}
+                    strokeWidth={1.5}
+                  />
+                ) : method === "OM" ? (
+                  <Smartphone
+                    size={24}
+                    color={paymentMethod === method ? "#fff" : "#4A0E0E"}
+                    strokeWidth={1.5}
+                  />
+                ) : method === "MoMo" ? (
+                  <Smartphone
+                    size={24}
+                    color={paymentMethod === method ? "#fff" : "#4A0E0E"}
+                    strokeWidth={1.5}
+                  />
+                ) : (
+                  <Wallet
+                    size={24}
+                    color={paymentMethod === method ? "#fff" : "#4A0E0E"}
+                    strokeWidth={1.5}
+                  />
+                )}
+              </View>
               <Text
                 style={[
                   styles.methodText,
@@ -224,25 +270,14 @@ export default function CartScreen() {
         </View>
       )}
 
-      <Modal visible={isSuccess} animationType="fade">
-        <View style={styles.successContainer}>
-          <Ionicons name="checkmark-circle" size={100} color="#4CAF50" />
-          <Text style={styles.successTitle}>Order Confirmed!</Text>
-          <Text style={styles.successSub}>
-            Your selection is being prepared for shipment.
-          </Text>
-
-          <TouchableOpacity
-            style={styles.doneBtn}
-            onPress={() => {
-              setIsSuccess(false);
-              router.push("/");
-            }}
-          >
-            <Text style={styles.doneText}>Back to Store</Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
+      <ReceiptModal
+        visible={isSuccess}
+        order={lastOrder}
+        onClose={() => {
+          setIsSuccess(false);
+          router.push("/");
+        }}
+      />
     </View>
   );
 }
@@ -320,38 +355,7 @@ const styles = StyleSheet.create({
     color: "#4A0E0E",
     fontWeight: "bold",
   },
-  successContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    padding: 30,
-  },
-  successTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#1a1a1a",
-    marginTop: 20,
-  },
-  successSub: {
-    fontSize: 16,
-    color: "#666",
-    textAlign: "center",
-    marginTop: 10,
-    lineHeight: 24,
-  },
-  doneBtn: {
-    marginTop: 40,
-    backgroundColor: "#4A0E0E",
-    paddingHorizontal: 40,
-    paddingVertical: 15,
-    borderRadius: 30,
-  },
-  doneText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
+
   paymentContainer: { padding: 20, flex: 1 },
   sectionTitle: {
     fontSize: 18,

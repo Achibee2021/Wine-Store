@@ -1,8 +1,8 @@
 import { WebHeader } from "@/components/webHeader";
 import { useAuth } from "@/context/AuthConthext";
 import { supabase } from "@/lib/supabase";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { ChevronRight, LogOut, UserCircle, Wine } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -18,10 +18,17 @@ export default function ProfileScreen() {
   const { isLoggedIn, user, logout, loading } = useAuth();
   const router = useRouter();
   const [orderCount, setOrderCount] = useState(0);
+  const [favCount, setFavCount] = useState(0);
 
   useEffect(() => {
     if (user) {
       fetchOrderStats();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fecthFavoritesStats();
     }
   }, [user]);
 
@@ -32,6 +39,19 @@ export default function ProfileScreen() {
       .eq("user_id", user?.id);
 
     if (!error && count !== null) setOrderCount(count);
+  };
+
+  const fecthFavoritesStats = async () => {
+    {
+      /**Fetch favorite Count */
+    }
+
+    const { count, error } = await supabase
+      .from("favorites")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user?.id);
+
+    if (!error && count !== null) setFavCount(count);
   };
 
   // 2. Get the safe area values
@@ -55,7 +75,7 @@ export default function ProfileScreen() {
         {isLoggedIn ? (
           <View style={styles.profileBox}>
             <View style={styles.avatarContainer}>
-              <Ionicons name="person-circle" size={100} color="#4A0E0E" />
+              <UserCircle size={100} color="#4A0E0E" strokeWidth={1.5} />
             </View>
 
             <Text style={styles.userName}>
@@ -71,23 +91,26 @@ export default function ProfileScreen() {
                 <Text style={styles.statNumber}>{orderCount}</Text>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
                   <Text style={styles.statLabel}>Orders</Text>
-                  <Ionicons name="chevron-forward" size={12} color="#999" />
+                  <ChevronRight size={12} color="#999" strokeWidth={1.5} />
                 </View>
               </TouchableOpacity>
-              <View style={[styles.statItem, styles.statBorder]}>
-                <Text style={styles.statNumber}>4</Text>
+              <TouchableOpacity
+                style={[styles.statItem, styles.statBorder]}
+                onPress={() => router.push("/favorites")}
+              >
+                <Text style={styles.statNumber}>{favCount}</Text>
                 <Text style={styles.statLabel}>Favorites</Text>
-              </View>
+              </TouchableOpacity>
             </View>
 
             <TouchableOpacity style={styles.logoutBtn} onPress={logout}>
-              <Ionicons name="log-out-outline" size={20} color="#4A0E0E" />
+              <LogOut size={20} color="#4A0E0E" strokeWidth={1.5} />
               <Text style={styles.logoutText}>Log Out</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.guestBox}>
-            <Ionicons name="wine-outline" size={80} color="#eee" />
+            <Wine size={80} color="#eee" strokeWidth={1.5} />
             <Text style={styles.guestTitle}>Exclusive Access</Text>
             <Text style={styles.guestText}>
               Sign in to save your favorite vintages and track your premium
@@ -105,7 +128,7 @@ export default function ProfileScreen() {
       </View>
 
       <View style={[styles.footer, { marginBottom: insets.bottom + 10 }]}>
-        <Text style={styles.versionText}>Version 1.0.0</Text>
+        <Text style={styles.versionText}>Version 2.0.0</Text>
         <Text style={styles.devText}>
           Designed & Developed by{" "}
           <Text style={styles.devName}>The Scientist</Text>

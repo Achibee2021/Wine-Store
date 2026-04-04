@@ -77,6 +77,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        emailRedirectTo: "https://dist-chi-eight-57.vercel.app",
+      },
     });
 
     if (error) alert(error.message);

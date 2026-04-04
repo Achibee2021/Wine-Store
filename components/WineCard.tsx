@@ -11,6 +11,7 @@ interface WineCardProps {
   region: string;
   type: string;
   image: string;
+  discount_price: number;
 }
 
 export const WineCard = ({
@@ -21,9 +22,12 @@ export const WineCard = ({
   region,
   type,
   image,
+  discount_price,
 }: WineCardProps) => {
   const { addToCart } = useCart();
   const router = useRouter();
+  const hasDiscount = discount_price && discount_price < price;
+  const finalPrice = hasDiscount ? discount_price : price;
 
   const handleAdd = (e: any) => {
     e.stopPropagation(); //Prevents opening the detail screen when clicking '+'
@@ -31,10 +35,11 @@ export const WineCard = ({
       id,
       name,
       winery,
-      price,
+      price: finalPrice,
       region,
       type,
       image,
+      originalPrice: price,
     });
     alert(`${name} added to cart!`);
   };
@@ -44,12 +49,6 @@ export const WineCard = ({
       pathname: "/wine-details",
       params: {
         id,
-        name,
-        winery,
-        price: price.toString(),
-        region,
-        type,
-        image,
       },
     });
   };
@@ -75,6 +74,20 @@ export const WineCard = ({
         <Text style={styles.winery}>
           {winery} . {region}
         </Text>
+        <View style={styles.priceRow}>
+          {hasDiscount ? (
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Text style={styles.discountPrice}>
+                €{discount_price.toFixed(2)}
+              </Text>
+              <Text style={styles.originalPriceStrikethrough}>
+                €{price.toFixed(2)}
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.price}>€{price.toFixed(2)}</Text>
+          )}
+        </View>
       </View>
       <TouchableOpacity style={styles.addButton} onPress={handleAdd}>
         <Text style={styles.addButtonText}>+</Text>
@@ -131,10 +144,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
+  priceRow: {
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+  },
   price: {
     fontSize: 17,
     fontWeight: "bold",
     color: "#1a1a1a",
+  },
+  discountPrice: {
+    fontSize: 17,
+    fontWeight: "bold",
+    color: "#B22222",
+    marginRight: 8,
+  },
+  originalPriceStrikethrough: {
+    fontSize: 13,
+    color: "#999",
+    textDecorationLine: "line-through",
   },
   addButton: {
     backgroundColor: "#4A0E0E",
