@@ -1,7 +1,14 @@
 import { supabase } from "@/lib/supabase";
 import { User } from "@supabase/supabase-js";
 import { useRouter } from "expo-router";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { PanResponder, View } from "react-native";
 
 interface AuthContexType {
   isLoggedIn: boolean;
@@ -9,6 +16,8 @@ interface AuthContexType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
   loading: boolean;
 }
 
@@ -18,6 +27,70 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
+  const logoutTimer = useRef<any>(null);
+
+  const resetTimer = () => {
+    if (logoutTimer.current) {
+      clearTimeout(logoutTimer.current);
+    }
+
+    {
+      /**Set the timeout for 30 minutes */
+    }
+
+    if (user) {
+      logoutTimer.current = setTimeout(() => {
+        console.log("User inactive. Logging out....");
+        logout();
+      }, 1800000);
+    }
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponderCapture: () => {
+        resetTimer();
+        return false;
+      },
+    }),
+  ).current;
+
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: "https://dist-chi-eight-57.vercel.app/update-password",
+    });
+
+    if (error) {
+      alert(error.message);
+      throw error;
+    } else {
+      alert("Password reset email sent! check your inbox.");
+      router.back();
+    }
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (error) {
+      alert(error.message);
+      throw error;
+    }
+
+    alert("Password update successfilly!");
+    router.replace("/login");
+  };
+
+  useEffect(() => {
+    if (user) {
+      resetTimer();
+    }
+    return () => {
+      if (logoutTimer.current) clearTimeout(logoutTimer.current);
+    };
+  }, [user]);
 
   // --- PERSISTENCE: Chek if user is already logged in on startup ---
 
@@ -104,10 +177,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         signIn,
         signUp,
         logout,
+        resetPassword,
+        updatePassword,
         loading,
       }}
     >
-      {children}
+      <View style={{ flex: 1 }} {...panResponder.panHandlers}>
+        {children}
+      </View>
     </AuthContext.Provider>
   );
 };

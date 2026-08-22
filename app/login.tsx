@@ -22,9 +22,9 @@ export default function LoginScreen() {
   const router = useRouter();
 
   const handleLogin = async () => {
-    if (!email.includes("@") || password.length < 6) {
+    if (!email.includes("@") || password.length < 8) {
       setErrorMessage(
-        "Please enter a valid email and password (min 6 characters)",
+        "Please enter a valid email and password (min 8 characters)",
       );
       return;
     }
@@ -36,9 +36,9 @@ export default function LoginScreen() {
   };
 
   const handleRegister = async () => {
-    if (!email.includes("@") || password.length < 6) {
+    if (!email.includes("@") || password.length < 8) {
       setErrorMessage(
-        "Please enter a valid email and password (min 6 characters)",
+        "Please enter a valid email and password (min 8 characters)",
       );
       return;
     }
@@ -119,6 +119,12 @@ export default function LoginScreen() {
         ) : (
           <Text style={styles.buttonText}>Sign In</Text>
         )}
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.forgotPassworButton}
+        onPress={() => router.push("/forgot-password")}
+      >
+        <Text style={styles.frogotPasswordText}>Forgot Password?</Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={handleRegister} style={styles.outlineButton}>
