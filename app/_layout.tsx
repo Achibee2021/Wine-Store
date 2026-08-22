@@ -14,37 +14,42 @@ import "./global-icons.css";
 
 import { AuthErrorHandler } from "@/components/AuthErrorHandler";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Platform } from "react-native";
 
-SplashScreen.preventAutoHideAsync();
+if (Platform.OS !== "web") {
+  SplashScreen.preventAutoHideAsync().catch(() => {});
+}
 
 export const unstable_settings = {
   initialRouteName: "(tabs)",
 };
 
+// Inner Component
+function RootNaviation() {
+  useProtectedRoute();
+
+  return (
+    <Stack>
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="modal"
+        options={{ presentation: "modal", title: "Modal" }}
+      />
+      <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
+      <Stack.Screen name="update-password" options={{ headerShown: false }} />
+    </Stack>
+  );
+}
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  useProtectedRoute();
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <AuthProvider>
         <CartProvider>
           <AuthErrorHandler>
-            <Stack>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="modal"
-                options={{ presentation: "modal", title: "Modal" }}
-              />
-              <Stack.Screen
-                name="forgot-password"
-                options={{ headerShown: false }}
-              />
-              <Stack.Screen
-                name="update-password"
-                options={{ headerShown: false }}
-              />
-            </Stack>
+            <RootNaviation />
           </AuthErrorHandler>
         </CartProvider>
       </AuthProvider>
