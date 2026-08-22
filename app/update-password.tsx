@@ -1,4 +1,4 @@
-import { useAuth } from "@/context/AuthConthext";
+import { useAuth } from "@/context/AuthContext";
 import { Stack, useRouter } from "expo-router";
 import { ArrowLeft, Check, Eye, EyeOff, Lock } from "lucide-react-native";
 import { useState } from "react";
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: "FDF0EE",
+    backgroundColor: "#FDF0EE",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 20,
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   },
   requirementIcon: {
     width: 20,
-    height: 200,
+    height: 20,
     borderRadius: 10,
     borderWidth: 1.5,
     borderColor: "#CCC",
