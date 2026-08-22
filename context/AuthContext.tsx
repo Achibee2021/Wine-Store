@@ -12,6 +12,7 @@ import { PanResponder, View } from "react-native";
 
 interface AuthContexType {
   isLoggedIn: boolean;
+  isAuthenticated: boolean;
   user: User | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
@@ -107,11 +108,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (error) console.error("Session fetch error:", error);
 
+        // clear invalid session
+        await supabase.auth.signOut();
+
         if (isMounted) {
-          setUser(session?.user ?? null);
+          setUser(null);
+        } else {
+          if (isMounted) setUser(session?.user ?? null);
         }
       } catch (err) {
         console.error("Auth initialization failed:", err);
+        if (isMounted) setUser(null);
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -173,6 +180,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     <AuthContext.Provider
       value={{
         isLoggedIn: !!user,
+        isAuthenticated: !!user,
         user,
         signIn,
         signUp,

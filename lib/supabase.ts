@@ -42,5 +42,13 @@ export const supabase = createClient(
       persistSession: true,
       detectSessionInUrl: false,
     },
-  },
+    global: {
+      fetch: (...args) => {
+        return fetch(...args).catch((err) =>{
+          console.error("Network error:", err);
+          throw err;
+        });
+      },
+    },
+  }
 );

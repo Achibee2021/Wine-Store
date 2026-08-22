@@ -1,5 +1,6 @@
 import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
+import { useProtectedRoute } from "@/hooks/userProtectedRoute";
 import {
   DarkTheme,
   DefaultTheme,
@@ -11,6 +12,7 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import "./global-icons.css";
 
+import { AuthErrorHandler } from "@/components/AuthErrorHandler";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 SplashScreen.preventAutoHideAsync();
@@ -21,26 +23,29 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  useProtectedRoute();
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <AuthProvider>
         <CartProvider>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="modal"
-              options={{ presentation: "modal", title: "Modal" }}
-            />
-            <Stack.Screen
-              name="forgot-password"
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen
-              name="update-password"
-              options={{ headerShown: false }}
-            />
-          </Stack>
+          <AuthErrorHandler>
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="modal"
+                options={{ presentation: "modal", title: "Modal" }}
+              />
+              <Stack.Screen
+                name="forgot-password"
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="update-password"
+                options={{ headerShown: false }}
+              />
+            </Stack>
+          </AuthErrorHandler>
         </CartProvider>
       </AuthProvider>
       <StatusBar style="auto" />
