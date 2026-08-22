@@ -1,4 +1,4 @@
-import { useAuth } from "@/context/AuthConthext";
+import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { useFocusEffect, useRouter } from "expo-router";
 import { ArrowLeft, ChevronRight, Heart } from "lucide-react-native";

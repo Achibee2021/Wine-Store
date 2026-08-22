@@ -1,6 +1,6 @@
 import { ReceiptModal } from "@/components/ReceiptModal";
 import { WebHeader } from "@/components/webHeader";
-import { useAuth } from "@/context/AuthConthext";
+import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "expo-router";

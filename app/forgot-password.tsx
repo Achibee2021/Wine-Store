@@ -1,4 +1,4 @@
-import { useAuth } from "@/context/AuthConthext";
+import { useAuth } from "@/context/AuthContext";
 import { Stack, useRouter } from "expo-router";
 import { ArrowLeft, Mail } from "lucide-react-native";
 import { useState } from "react";

@@ -1,15 +1,15 @@
 import { WebHeader } from "@/components/webHeader";
-import { useAuth } from "@/context/AuthConthext";
+import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "expo-router";
 import { ChevronRight, LogOut, UserCircle, Wine } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 // 1. Import the modern hook
 import { useSafeAreaInsets } from "react-native-safe-area-context";

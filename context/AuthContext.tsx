@@ -46,14 +46,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const panResponder = useRef(
-    PanResponder.create({
+  const panResponder = React.useMemo(() => {
+    return PanResponder.create({
       onStartShouldSetPanResponderCapture: () => {
         resetTimer();
         return false;
       },
-    }),
-  ).current;
+    });
+  }, []);
 
   const resetPassword = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
