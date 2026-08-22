@@ -11,16 +11,24 @@ export function useProtectedRoute() {
         if(loading) return;
 
         
-        const rootSegment = segments[0] as string | undefined;
+        const inAunthGroup = segments[0] === "(tabs)";
 
         const isProtectedRoute = segments[0] === "orders" || segments[0] === "favorites";
 
-        const inAuthRoute = rootSegment === "login" || rootSegment === "forgot-password";
+        const publicRoutes = [
+            "login",
+            "forgot-password",
+            "update-password",
+            "wine-details",
+            "modal",
+        ];
         
-        if(isLoggedIn && isProtectedRoute) {
+        const isPublicRoute = publicRoutes.includes(segments[0] || "");
+
+        if(isLoggedIn && !isPublicRoute && (inAunthGroup || isProtectedRoute)) {
             router.replace("/login");
-        } else if(isLoggedIn && inAuthRoute) {
+        } else if(isLoggedIn && segments[0] === "login") {
             router.replace("/");
         }
-    }, [isLoggedIn, loading, segments, router]);
+    }, [isLoggedIn, loading, segments]);
 }
