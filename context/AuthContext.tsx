@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { User } from "@supabase/supabase-js";
+import * as linking from "expo-linking";
 import { useRouter } from "expo-router";
 import React, {
   createContext,
@@ -108,13 +109,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (error) console.error("Session fetch error:", error);
 
-        // clear invalid session
-        await supabase.auth.signOut();
-
         if (isMounted) {
-          setUser(null);
-        } else {
-          if (isMounted) setUser(session?.user ?? null);
+          setUser(session?.user ?? null);
         }
       } catch (err) {
         console.error("Auth initialization failed:", err);
@@ -128,9 +124,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Listen for auth changes (Login, Logout, Token refresh)
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         setUser(session?.user ?? null);
         setLoading(false);
+
+        if (event === "PASSWORD_RECOVERY") {
+          router.push("/update-password");
+        }
       },
     );
 
@@ -138,6 +138,37 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       isMounted = false;
       authListener.subscription.unsubscribe();
     };
+  }, []);
+
+  useEffect(() => {
+    const handleDeepLink = async (url: string | null) => {
+      if (!url) return;
+
+      if (url.includes("update-password") || url.includes("access_token")) {
+        const fragment = url.split("#")[1] || url.split("?")[1];
+
+        if (!fragment) return;
+
+        const params = new URLSearchParams(fragment);
+        const accessToken = params.get("access_token");
+        const refreshToken = params.get("refresh_token");
+
+        if (accessToken && refreshToken) {
+          await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+        }
+      }
+    };
+
+    linking.getInitialURL().then(handleDeepLink);
+
+    const subscription = linking.addEventListener("url", (event) => {
+      handleDeepLink(event.url);
+    });
+
+    return () => subscription.remove();
   }, []);
 
   const signIn = async (email: string, password: string) => {
