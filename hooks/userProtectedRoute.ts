@@ -10,25 +10,17 @@ export function useProtectedRoute() {
     useEffect(()=> {
         if(loading) return;
 
+        const currentSegment = segments[0] as string | undefined;
+
+        const isProtectedRoute = currentSegment === "orders" || currentSegment === "favorites";
+
+        const isGuestOnlyRoute = currentSegment === "login" || currentSegment === "forgot-password";
         
-        const inAunthGroup = segments[0] === "(tabs)";
 
-        const isProtectedRoute = segments[0] === "orders" || segments[0] === "favorites";
-
-        const publicRoutes = [
-            "login",
-            "forgot-password",
-            "update-password",
-            "wine-details",
-            "modal",
-        ];
-        
-        const isPublicRoute = publicRoutes.includes(segments[0] || "");
-
-        if(isLoggedIn && !isPublicRoute && (inAunthGroup || isProtectedRoute)) {
+        if(!isLoggedIn && isProtectedRoute) {
             router.replace("/login");
-        } else if(isLoggedIn && segments[0] === "login") {
+        } else if(isLoggedIn && isGuestOnlyRoute) {
             router.replace("/");
         }
-    }, [isLoggedIn, loading, segments]);
+    }, [isLoggedIn, loading, segments, router]);
 }
