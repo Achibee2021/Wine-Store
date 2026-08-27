@@ -1,3 +1,4 @@
+import { GuestCheckoutModal } from "@/components/GuestCheckOutModal";
 import { ReceiptModal } from "@/components/ReceiptModal";
 import { WebHeader } from "@/components/webHeader";
 import { useAuth } from "@/context/AuthContext";
@@ -9,10 +10,11 @@ import {
   CreditCard,
   Minus,
   Plus,
+  Send,
   ShoppingCart,
   Smartphone,
   Trash2,
-  Wallet,
+  Wallet
 } from "lucide-react-native";
 import React, { useState } from "react";
 import {
@@ -43,6 +45,8 @@ export default function CartScreen() {
   const [isSuccess, setIsSuccess] = useState(false);
   const { isLoggedIn, loading, user } = useAuth();
   const [lastOrder, setLastOrder] = useState<any>(null);
+  const [isGuestModalVisible, setIsGuestModalvisible] = useState(false);
+  const [isGuestProcessing, setIsGuestProcessing] = useState(false);
 
   const handleCheckout = async () => {
     if (!user) {
@@ -82,6 +86,46 @@ export default function CartScreen() {
     } catch (error: any) {
       alert("Payment failed:" + error.message);
       setIsProcessing(false);
+    }
+  };
+
+  const handleGuestOrder = async (guestData: {
+    name: string;
+    email: string;
+    phone?: string;
+  }) => {
+    setIsGuestProcessing(true);
+
+    try {
+      const orderData = {
+        customer_name: guestData.name,
+        customer_email: guestData.email,
+        customer_phone: guestData.phone,
+        total_amount: totalPrice,
+        total_savings: totalSavings,
+        items: cart,
+        paymentMethod: "none",
+        status: "order send",
+        is_guest: true,
+      };
+
+      const { data, error } = await supabase
+        .from("orders")
+        .insert([orderData])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setLastOrder(data);
+      setIsGuestModalvisible(false);
+      setIsSuccess(true);
+      clearCart();
+      setIsCheckoutStep(false);
+    } catch (error: any) {
+      alert("Failed to send order: " + error.message);
+    } finally {
+      setIsGuestProcessing(false);
     }
   };
 
@@ -183,18 +227,28 @@ export default function CartScreen() {
                 <Text style={styles.totalPrice}>€{totalPrice.toFixed(2)}</Text>
               </View>
 
-              <TouchableOpacity
-                style={styles.checkOutBtn}
-                onPress={() => {
-                  if (isLoggedIn) {
-                    setIsCheckoutStep(true);
-                  } else {
-                    router.push("/login");
-                  }
-                }}
-              >
-                <Text style={styles.checkOutText}>Proceed to Payment</Text>
-              </TouchableOpacity>
+              <View style={styles.checkoutOptions}>
+                <TouchableOpacity
+                  style={styles.sendOrderBtn}
+                  onPress={() => setIsGuestModalvisible(true)}
+                >
+                  <Send size={20} color="#4A0E0E" strokeWidth={2} />
+                  <Text style={styles.sendOrderText}>Send Order</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.checkOutBtn}
+                  onPress={() => {
+                    if (isLoggedIn) {
+                      setIsCheckoutStep(true);
+                    } else {
+                      router.push("/login");
+                    }
+                  }}
+                >
+                  <Text style={styles.checkOutText}>Proceed to Payment</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
         </>
@@ -269,6 +323,13 @@ export default function CartScreen() {
           </View>
         </View>
       )}
+
+      <GuestCheckoutModal
+        visible={isGuestModalVisible}
+        onClose={() => setIsGuestModalvisible(false)}
+        onSubmit={handleGuestOrder}
+        isProcessing={isGuestProcessing}
+      />
 
       <ReceiptModal
         visible={isSuccess}
@@ -395,4 +456,24 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   payText: { color: "#fff", fontSize: 18, fontWeight: "bold" },
+  checkoutOptions: {
+    gap: 12,
+  },
+  sendOrderBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: 18,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    borderWidth: 2,
+    borderColor: "#4A0E0E",
+    marginBottom: 12,
+  },
+  sendOrderText: {
+    color: "#4A0E0E",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
 });

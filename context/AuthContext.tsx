@@ -4,6 +4,7 @@ import * as linking from "expo-linking";
 import { useRouter } from "expo-router";
 import React, {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -31,13 +32,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const logoutTimer = useRef<any>(null);
 
-  const resetTimer = () => {
+  const logout = useCallback(async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      alert(error.message);
+    } else {
+      setUser(null);
+      router.replace("/login");
+    }
+  }, [router]);
+
+  const resetTimer = useCallback(() => {
     if (logoutTimer.current) {
       clearTimeout(logoutTimer.current);
-    }
-
-    {
-      /**Set the timeout for 30 minutes */
     }
 
     if (user) {
@@ -46,7 +53,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         logout();
       }, 1800000);
     }
-  };
+  }, [user, logout]);
 
   const panResponder = React.useMemo(() => {
     return PanResponder.create({
@@ -55,7 +62,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return false;
       },
     });
-  }, []);
+  }, [resetTimer]);
 
   const resetPassword = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -92,7 +99,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       if (logoutTimer.current) clearTimeout(logoutTimer.current);
     };
-  }, [user]);
+  }, [user, resetTimer]);
 
   // --- PERSISTENCE: Chek if user is already logged in on startup ---
 
@@ -125,11 +132,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Listen for auth changes (Login, Logout, Token refresh)
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        setUser(session?.user ?? null);
-        setLoading(false);
+        if (isMounted) {
+          setUser(session?.user ?? null);
+          setLoading(false);
 
-        if (event === "PASSWORD_RECOVERY") {
-          router.push("/update-password");
+          if (event === "PASSWORD_RECOVERY") {
+            setTimeout(() => {
+              router.push("/update-password");
+            }, 0);
+          }
         }
       },
     );
@@ -138,8 +149,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       isMounted = false;
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [router]);
 
+  // Deep Linking for mobile token recovery
   useEffect(() => {
     const handleDeepLink = async (url: string | null) => {
       if (!url) return;
@@ -195,16 +207,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     if (error) alert(error.message);
     else alert("ckeck Your email for the confirmation link");
-  };
-
-  const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      alert(error.message);
-    } else {
-      setUser(null);
-      router.replace("/login");
-    }
   };
 
   return (
